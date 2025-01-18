@@ -6,6 +6,7 @@ import {
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import Homenav from "./components/HomeNav/Homenav";
 import Hero from "./components/Hero/Hero";
+import OpenMap from "./components/OpenMap/OpenMap";
 
 export default async function Home() {
   // checking if user is logged in
@@ -20,6 +21,7 @@ export default async function Home() {
     {/* Seach bar */}
     <Homenav/>
     <Hero/>
+    {/* <OpenMap/> */}
     </>
   );
 }

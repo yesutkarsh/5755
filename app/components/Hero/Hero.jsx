@@ -45,6 +45,7 @@ export default async function Hero() {
             <span><i className="ri-timer-2-fill"></i> Watch List</span>
             <span><i className="ri-timer-2-fill"></i> Explore </span>
         </div>
+        
         <div className={styles.crasoul}>
             <span className={styles.brandSponser} >
             <img src="https://res.cloudinary.com/dpcvcblbt/image/upload/v1737160183/5755/kyj6wtodyz313cjsoomq.png" alt="" />
