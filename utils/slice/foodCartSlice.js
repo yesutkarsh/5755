@@ -8,7 +8,7 @@ const foodCartSlice = createSlice({
     },
     reducers: {
         addItem: (state, action) => {
-            const { id, name, price, quantity = 1 } = action.payload;
+            const { id, name, price, quantity = 1, place } = action.payload;
 
             // Check if the item already exists in the cart
             const existingItem = state.items.find((item) => item.id === id);
@@ -25,6 +25,7 @@ const foodCartSlice = createSlice({
                     price,
                     quantity,
                     totalPrice: price * quantity,
+                    place,
                 });
             }
 

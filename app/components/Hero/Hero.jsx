@@ -6,6 +6,7 @@ import {RegisterLink, LoginLink} from "@kinde-oss/kinde-auth-nextjs/components";
 
 import styles from './styles.module.css'
 import Link from "next/link";
+import MapAnalytics from "./components/MapAnalytics";
 export default async function Hero() {
 
     const {getUser} = getKindeServerSession();
@@ -59,6 +60,9 @@ export default async function Hero() {
 
         </div>
         </div> 
+
+
+        <MapAnalytics/>
     </div>
     </>
   )
