@@ -29,9 +29,9 @@ export default async function Hero() {
             <i className="ri-apple-fill"></i>
             <i className="ri-microsoft-fill"></i>
                  
-            <LoginLink postLoginRedirectURL="/dashboard">Sign in</LoginLink>
+            <LoginLink postLoginRedirectURL="/">Sign in</LoginLink>
 
-            <RegisterLink postLoginRedirectURL="/welcome">Sign up</RegisterLink>
+            <RegisterLink postLoginRedirectURL="/">Sign up</RegisterLink>
 
                  
                  </button>
