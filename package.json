@@ -11,10 +11,12 @@
   "dependencies": {
     "@kinde-oss/kinde-auth-nextjs": "^2.4.6",
     "@react-google-maps/api": "^2.20.5",
+    "@reduxjs/toolkit": "^2.5.0",
     "axios": "^1.7.9",
     "next": "15.1.5",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "react-redux": "^9.2.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

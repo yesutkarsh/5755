@@ -5,6 +5,7 @@ import {RegisterLink, LoginLink} from "@kinde-oss/kinde-auth-nextjs/components";
 
 
 import styles from './styles.module.css'
+import Link from "next/link";
 export default async function Hero() {
 
     const {getUser} = getKindeServerSession();
@@ -51,7 +52,9 @@ export default async function Hero() {
             <img src="https://res.cloudinary.com/dpcvcblbt/image/upload/v1737160183/5755/kyj6wtodyz313cjsoomq.png" alt="" />
             <img src="https://res.cloudinary.com/dpcvcblbt/image/upload/v1737160234/5755/t0vihgw7d0dfa99shyvl.png" alt="" />
             </span>
+            <Link href="/Swiggy">
             <span><i className="ri-restaurant-line"></i> Order Food</span>
+            </Link>
             <span><i className="ri-slideshow-3-fill"></i> Meeting </span>
 
         </div>
