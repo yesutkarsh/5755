@@ -2,9 +2,120 @@ import { useState, useEffect, useRef } from "react";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Menu, X as XIcon, Send, Plus, Trash2 } from "lucide-react";
+import { Menu, X as XIcon, Send, Plus, Trash2, Mic } from "lucide-react";
 const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(apiKey);
+
+// Add these constants at the top of your file after the genAI initialization
+const GOOGLE_CLOUD_API_KEY = import.meta.env.VITE_GOOGLE_CLOUD_API_KEY; // You'll need to add this to your .env file
+// Utility to convert Blob to Base64 (Now correctly used)
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result.split(",")[1];
+      // // console.log("Base64 String:", base64String.substring(0, 100) + "..."); // Log first 100 chars
+      resolve(base64String);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+async function speechToText(audioBlob) {
+  try {
+    const base64Audio = await blobToBase64(audioBlob);
+
+    const response = await fetch(
+      `https://speech.googleapis.com/v1/speech:recognize?key=${GOOGLE_CLOUD_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          config: {
+            encoding: "WEBM_OPUS", // Correct encoding for webm/opus
+            sampleRateHertz: 48000,
+            languageCode: "en-US",
+          },
+          audio: {
+            content: base64Audio,
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Speech-to-Text API Error:", response.status, errorText);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+
+    const data = await response.json();
+    // // console.log("Raw API Response:", data); // Keep this log for now
+    const transcription =
+      data.results?.[0]?.alternatives?.[0]?.transcript || "";
+    return transcription;
+  } catch (error) {
+    console.error("Error with Speech-to-Text:", error);
+    return "";
+  }
+}
+// Replace your existing textToSpeech function with this one
+async function textToSpeech(text) {
+  try {
+    const response = await fetch(
+      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_CLOUD_API_KEY}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          input: {
+            text: text,
+          },
+          voice: {
+            languageCode: "en-US",
+            name: "en-US-Journey-F",
+          },
+          audioConfig: {
+            audioEncoding: "MP3",
+          },
+        }),
+      }
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (response.ok) {
+      const audioContent = atob(data.audioContent);
+      const arrayBuffer = new ArrayBuffer(audioContent.length);
+      const view = new Uint8Array(arrayBuffer);
+      for (let i = 0; i < audioContent.length; i++) {
+        view[i] = audioContent.charCodeAt(i);
+      }
+
+      const audioBlob = new Blob([arrayBuffer], { type: "audio/mp3" });
+      const audioUrl = URL.createObjectURL(audioBlob);
+      const audio = new Audio(audioUrl);
+      await audio.play();
+      audio.onended = () => URL.revokeObjectURL(audioUrl);
+    } else {
+      console.error("TTS API Error:", data.error);
+    }
+  } catch (error) {
+    console.error("Error with text-to-speech:", error);
+    // Fallback to browser's TTS if Google Cloud fails
+    const utterance = new SpeechSynthesisUtterance(text);
+    window.speechSynthesis.speak(utterance);
+  }
+}
 
 const model = genAI.getGenerativeModel({
   model: "gemini-2.0-flash-exp",
@@ -71,7 +182,71 @@ function EmergencyChatBot() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const messagesEndRef = useRef(null);
+  const [isListening, setIsListening] = useState(false);
+  // const [recognitionResult, setRecognitionResult] = useState("");
+  const mediaRecorderRef = useRef(null);
+  // Start microphone recording
+  const startListening = async () => {
+    setIsListening(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: "audio/webm;codecs=opus",
+        audioBitsPerSecond: 128000,
+      });
+      mediaRecorderRef.current = mediaRecorder;
+
+      const audioChunks = [];
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          // console.log("MediaRecorder: Data available", event.data);
+          audioChunks.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        // console.log("MediaRecorder: Recording stopped");
+        // console.log("Audio Chunks:", audioChunks);
+        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        // const audioUrl = URL.createObjectURL(audioBlob);
+        // const audio = new Audio(audioUrl);
+        // audio.onended = () => URL.revokeObjectURL(audioUrl); // Clean up
+        // audio.play(); // Play the audio in the browser
+        // console.log("Audio Blob:", audioBlob);
+
+        try {
+          const transcription = await speechToText(audioBlob); // <--- HERE'S THE FIX
+          // console.log("Transcription:", transcription); // Log the transcription
+          setInput(transcription);
+          // console.log("Input set to:", transcription);
+        } catch (speechToTextError) {
+          console.error("Error in speechToText:", speechToTextError);
+          alert("Error processing speech. Please try again.");
+        }
+        setIsListening(false);
+      };
+
+      mediaRecorder.onstart = () =>
+        // console.log("MediaRecorder: Recording started");
+        (mediaRecorder.onerror = (error) =>
+          console.error("MediaRecorder Error:", error));
+
+      mediaRecorder.start();
+    } catch (error) {
+      console.error("Error accessing microphone:", error);
+      setIsListening(false);
+      alert(
+        "Microphone access denied or not available. Please check your settings."
+      );
+    }
+  };
+
+  const stopListening = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stop();
+    }
+  };
   useEffect(() => {
     const storedChatList = localStorage.getItem(CHAT_LIST_KEY);
     const parsedChatList = storedChatList ? JSON.parse(storedChatList) : [];
@@ -155,13 +330,21 @@ function EmergencyChatBot() {
       });
 
       const result = await chatSession.sendMessage(input);
+      const responseText = result.response.text();
+
+      // Start text-to-speech as soon as we get the response
+      await textToSpeech(responseText);
+
+      // Typing animation
       let fullResponse = "";
-      let assistantMessage = { role: "assistant", content: "" };
+      setMessages((prevMessages) => [
+        ...prevMessages,
+        { role: "assistant", content: "" },
+      ]);
 
-      setMessages((prevMessages) => [...prevMessages, assistantMessage]);
+      for (let i = 0; i < responseText.length; i++) {
+        fullResponse += responseText[i];
 
-      for (const part of result.response.text().split("")) {
-        fullResponse += part;
         setMessages((prevMessages) => {
           const updatedMessages = prevMessages.map((msg, index) => {
             if (index === prevMessages.length - 1) {
@@ -171,7 +354,8 @@ function EmergencyChatBot() {
           });
           return updatedMessages;
         });
-        await new Promise((resolve) => setTimeout(resolve, 20));
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -300,7 +484,7 @@ function EmergencyChatBot() {
         </div>
 
         <div className="p-4 border-t dark:border-gray-700 bg-white dark:bg-gray-800">
-          <div className="flex gap-2 max-w-4xl mx-auto">
+          <div className="flex items-center">
             <input
               type="text"
               value={input}
@@ -308,14 +492,20 @@ function EmergencyChatBot() {
               onKeyDown={(e) =>
                 e.key === "Enter" && !e.shiftKey && sendMessage()
               }
-              placeholder="Type your message..."
-              className="flex-1 p-3 rounded-lg border dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white"
+              placeholder="Type your message here..."
+              className="flex-grow p-2 border rounded-md"
             />
             <button
-              onClick={sendMessage}
-              className="p-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              onClick={() => sendMessage()}
+              className="ml-2 p-2 bg-blue-500 text-white rounded-md"
             >
               <Send className="w-5 h-5" />
+            </button>
+            <button
+              onClick={isListening ? stopListening : startListening}
+              className="ml-2 p-2 bg-gray-500 text-white rounded-md"
+            >
+              <Mic className={`w-5 h-5 ${isListening ? "text-red-500" : ""}`} />
             </button>
           </div>
         </div>
