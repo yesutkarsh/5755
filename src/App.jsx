@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-ro
 import AmbulanceService from './pages/AmbulanceService';
 import PoliceService from './pages/PoliceService';
 import FireBrigadeService from './pages/FireBrigadeService';
+import EmergencyForm from './components/EmergencyForm';
 
 const App = () => {
   return (
@@ -75,6 +76,7 @@ const App = () => {
             <Route path="/police" element={<PoliceService />} />
             <Route path="/fire" element={<FireBrigadeService />} />
             <Route path="*" element={<Navigate to="/ambulance" replace />} />
+            <Route path="/user" element={<EmergencyForm/>} />
           </Routes>
         </main>
       </div>
