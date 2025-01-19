@@ -65,7 +65,7 @@ export default function Hero() {
                     <span>
                         <i className="ri-timer-2-fill"></i> Watch List
                     </span>
-                    <Link href="/EntHub/https://yesnetflixgpt.vercel.app/browse">
+                    <Link href="/EntHub">
                     <span>
                         <i className="ri-timer-2-fill"></i> Entertainment Hub
                     </span>
