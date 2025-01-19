@@ -1,6 +1,5 @@
 "use client"
 import React, { useState, useEffect, useRef } from "react";
-import styles from "./styles.module.css";
 import {
   GoogleMap,
   useLoadScript,
@@ -8,6 +7,7 @@ import {
   TrafficLayer,
   Marker,
 } from "@react-google-maps/api";
+import { Search, MapPin, Navigation2, X, Compass, Menu } from "lucide-react";
 
 export default function NavigationMap() {
   const { isLoaded } = useLoadScript({
@@ -23,14 +23,16 @@ export default function NavigationMap() {
   const [isLoading, setIsLoading] = useState(false);
   const [steps, setSteps] = useState([]);
   const [isTracking, setIsTracking] = useState(false);
+  const [searchResults, setSearchResults] = useState([]);
+  const [showDirections, setShowDirections] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const watchIdRef = useRef(null);
+  const googleMapsRef = useRef(null);
 
-  // Get initial user location
   useEffect(() => {
     getCurrentLocation();
   }, []);
 
-  // Cleanup location tracking on unmount
   useEffect(() => {
     return () => {
       if (watchIdRef.current) {
@@ -38,6 +40,12 @@ export default function NavigationMap() {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (isLoaded && userLocation) {
+      googleMapsRef.current = new google.maps.Map(document.createElement("div"));
+    }
+  }, [isLoaded, userLocation]);
 
   const getCurrentLocation = () => {
     if ("geolocation" in navigator) {
@@ -48,11 +56,51 @@ export default function NavigationMap() {
             lng: position.coords.longitude,
           };
           setUserLocation(newLocation);
+          // Get address from coordinates
+          if (isLoaded && googleMapsRef.current) {
+            const geocoder = new google.maps.Geocoder();
+            geocoder.geocode(
+              { location: newLocation },
+              (results, status) => {
+                if (status === "OK" && results[0]) {
+                  setFrom(results[0].formatted_address);
+                }
+              }
+            );
+          }
         },
         (error) => {
           setError("Unable to get your location. Please enable location services.");
         }
       );
+    } else {
+      setError("Geolocation is not supported by your browser.");
+    }
+  };
+
+  const searchNearby = (query) => {
+    if (!query) {
+      setSearchResults([]);
+      return;
+    }
+    
+    if (googleMapsRef.current && userLocation) {
+      const service = new google.maps.places.PlacesService(googleMapsRef.current);
+      const request = {
+        location: new google.maps.LatLng(userLocation.lat, userLocation.lng),
+        radius: 5000,
+        query: query
+      };
+
+      service.textSearch(request, (results, status) => {
+        if (status === google.maps.places.PlacesServiceStatus.OK) {
+          setSearchResults(results);
+          setError("");
+        } else {
+          setError("Unable to find places. Please try again.");
+          setSearchResults([]);
+        }
+      });
     }
   };
 
@@ -87,16 +135,6 @@ export default function NavigationMap() {
     }
   };
 
-  const containerStyle = {
-    width: "100%",
-    height: "100vh",
-  };
-
-  const defaultCenter = {
-    lat: 28.6139,
-    lng: 77.209,
-  };
-
   const calculateRoute = async () => {
     if (!from || !to) {
       setError("Please enter both 'From' and 'To' locations");
@@ -115,9 +153,9 @@ export default function NavigationMap() {
       });
       
       setDirections(result);
-      // Extract turn-by-turn directions
       setSteps(result.routes[0].legs[0].steps);
-      startLiveTracking(); // Start tracking user location when navigation begins
+      setShowDirections(true);
+      startLiveTracking();
     } catch (error) {
       setError("Could not calculate route. Please check the addresses and try again.");
     } finally {
@@ -126,115 +164,199 @@ export default function NavigationMap() {
   };
 
   const useCurrentLocation = () => {
-    if (userLocation) {
-      setFrom(`${userLocation.lat},${userLocation.lng}`);
-    }
+    getCurrentLocation();
   };
 
-  // Function to create a clean version of instructions (removing HTML tags)
   const cleanInstructions = (instruction) => {
     const div = document.createElement('div');
     div.innerHTML = instruction;
     return div.textContent || div.innerText || '';
   };
 
-  if (!isLoaded) return <div>Loading...</div>;
+  const containerStyle = {
+    width: "100%",
+    height: "100vh",
+  };
+
+  const defaultCenter = {
+    lat: 28.6139,
+    lng: 77.209,
+  };
+
+  if (!isLoaded) return (
+    <div className="h-screen w-full flex items-center justify-center bg-gray-50">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+    </div>
+  );
 
   return (
-    <div>
-
-      <div className={styles.bottomNav}>
-        <div>
-        <button onClick={useCurrentLocation}> <i className="ri-map-pin-line"></i> Current Location</button>
+    <div className="relative h-screen">
+      {/* Search Panel */}
+      <div className="absolute top-4 left-4 right-4 z-10 bg-white rounded-lg shadow-lg p-4 space-y-4 max-w-md mx-auto">
+        <div className="relative">
+          <Search className="absolute left-3 top-3 text-gray-400 h-5 w-5" />
+          <input
+            type="text"
+            placeholder="Search nearby places..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              searchNearby(e.target.value);
+            }}
+            className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
         </div>
 
-        <div>
-            
-        <button 
-        className={styles.startNavagation}
+        {searchResults.length > 0 && (
+          <div className="max-h-48 overflow-y-auto bg-white rounded-lg border border-gray-200">
+            {searchResults.map((place, index) => (
+              <button
+                key={index}
+                onClick={() => {
+                  setTo(place.formatted_address);
+                  setSearchResults([]);
+                  setSearchQuery("");
+                }}
+                className="w-full text-left px-4 py-2 hover:bg-gray-50 border-b last:border-b-0"
+              >
+                <div className="font-medium">{place.name}</div>
+                <div className="text-sm text-gray-500">{place.formatted_address}</div>
+              </button>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-4">
+          <div className="relative flex-1">
+            <MapPin className="absolute left-3 top-3 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="From"
+              value={from}
+              onChange={(e) => setFrom(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="relative flex-1">
+            <Navigation2 className="absolute left-3 top-3 text-gray-400 h-5 w-5" />
+            <input
+              type="text"
+              placeholder="To"
+              value={to}
+              onChange={(e) => setTo(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            onClick={useCurrentLocation}
+            className="flex-1 flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 rounded-lg transition-colors"
+          >
+            <MapPin className="h-4 w-4" />
+            Current Location
+          </button>
+          <button
             onClick={calculateRoute}
             disabled={isLoading}
+            className="flex-1 flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white py-2 rounded-lg transition-colors disabled:opacity-50"
           >
-            <i className="ri-compass-3-line"></i> 
-            {isLoading ? " Calculating..." : " Start Navigation"}
+            <Compass className="h-4 w-4" />
+            {isLoading ? "Calculating..." : "Start Navigation"}
           </button>
         </div>
-
-
-      </div>
-      <div className={styles.container}>
-        <div>
-          <input
-            type="text"
-            placeholder="From"
-            value={from}
-            onChange={(e) => setFrom(e.target.value)}
-          />
-        </div>
-        <div>
-          <input
-            type="text"
-            placeholder="To"
-            value={to}
-            onChange={(e) => setTo(e.target.value)}
-          />
-        </div>
-        {error && <div>{error}</div>}
       </div>
 
       {/* Map Container */}
-      <div>
-        <GoogleMap
-          mapContainerStyle={containerStyle}
-          center={userLocation || defaultCenter}
-          zoom={12}
-          options={{
-            zoomControl: true,
-            streetViewControl: false,
-            mapTypeControl: false,
-            fullscreenControl: true,
-          }}
-        >
-          <TrafficLayer />
-          {directions && <DirectionsRenderer directions={directions} />}
-          {userLocation && (
-            <Marker
-              position={userLocation}
-              icon={{
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 7,
-                fillColor: "#4285F4",
-                fillOpacity: 1,
-                strokeWeight: 2,
-                strokeColor: "#FFFFFF",
-              }}
-            />
-          )}
-        </GoogleMap>
-      </div>
+      <GoogleMap
+        mapContainerStyle={containerStyle}
+        center={userLocation || defaultCenter}
+        zoom={12}
+        options={{
+          zoomControl: true,
+          streetViewControl: false,
+          mapTypeControl: false,
+          fullscreenControl: true,
+        }}
+      >
+        <TrafficLayer />
+        {directions && <DirectionsRenderer directions={directions} />}
+        {userLocation && (
+          <Marker
+            position={userLocation}
+            icon={{
+              path: google.maps.SymbolPath.CIRCLE,
+              scale: 7,
+              fillColor: "#4285F4",
+              fillOpacity: 1,
+              strokeWeight: 2,
+              strokeColor: "#FFFFFF",
+            }}
+          />
+        )}
+        {searchResults.map((place, index) => (
+          <Marker
+            key={index}
+            position={place.geometry.location}
+            title={place.name}
+          />
+        ))}
+      </GoogleMap>
 
-      {/* Turn-by-turn directions */}
+      {/* Directions Panel */}
       {steps.length > 0 && (
-        <div>
-          <h3>Turn-by-Turn Directions:</h3>
-          <div>
+        <div className={`absolute right-4 top-4 bottom-4 w-96 bg-white rounded-lg shadow-lg transition-transform duration-300 ${showDirections ? 'translate-x-0' : 'translate-x-full'}`}>
+          <div className="p-4 border-b flex items-center justify-between">
+            <h3 className="font-semibold text-lg">Turn-by-Turn Directions</h3>
+            <button
+              onClick={() => setShowDirections(false)}
+              className="p-1 hover:bg-gray-100 rounded-full"
+            >
+              <X className="h-5 w-5 text-gray-500" />
+            </button>
+          </div>
+          <div className="overflow-auto h-[calc(100%-4rem)] p-4">
             {steps.map((step, index) => (
-              <div key={index}>
-                <p>{index + 1}. {cleanInstructions(step.instructions)}</p>
-                <small>{(step.distance.text)} - {(step.duration.text)}</small>
+              <div key={index} className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <p className="text-gray-700">{index + 1}. {cleanInstructions(step.instructions)}</p>
+                <div className="mt-2 text-sm text-gray-500 flex gap-3">
+                  <span>{step.distance.text}</span>
+                  <span>•</span>
+                  <span>{step.duration.text}</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
       )}
 
-      {/* Live tracking controls */}
+      {/* Toggle Directions Button */}
+      {steps.length > 0 && !showDirections && (
+        <button
+          onClick={() => setShowDirections(true)}
+          className="absolute top-4 right-4 bg-white p-3 rounded-full shadow-lg hover:bg-gray-50"
+        >
+          <Menu className="h-5 w-5 text-gray-700" />
+        </button>
+      )}
+
+      {/* Live Tracking Button */}
       {directions && (
-        <div>
-          <button onClick={isTracking ? stopLiveTracking : startLiveTracking}>
-            {isTracking ? "Stop Live Tracking" : "Start Live Tracking"}
-          </button>
-        </div>
+        <button
+          onClick={isTracking ? stopLiveTracking : startLiveTracking}
+          className={`absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-3 rounded-full shadow-lg transition-colors ${
+            isTracking ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+          } text-white`}
+        >
+          {isTracking ? "Stop Live Tracking" : "Start Live Tracking"}
+        </button>
       )}
     </div>
   );

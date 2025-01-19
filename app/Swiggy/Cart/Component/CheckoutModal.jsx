@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { toggleCheckoutVisibility } from '@/utils/slice/ToggleSlice';
 import { getDatabase, ref, push } from "firebase/database"; // Changed back to push
 import { initializeApp } from 'firebase/app';
-
+import { useRouter } from 'next/navigation'
 // Initialize Firebase with minimal config since rules are public
 const app = initializeApp({
   databaseURL: "https://project-8269032991113480607-default-rtdb.firebaseio.com/"
@@ -13,6 +13,8 @@ const app = initializeApp({
 const db = getDatabase(app);
 
 export default function CheckoutModal({totalPrice}) {
+
+    const router = useRouter()
     const [user, setUser] = useState(null);
     const dispatch = useDispatch();
     const cartData = useSelector((state) => state.foodCart);
@@ -41,6 +43,8 @@ export default function CheckoutModal({totalPrice}) {
             await push(userOrdersRef, orderData);
             
             console.log('Order submitted successfully');
+
+            router.push('/Swiggy/MyOrders')
             dispatch(toggleCheckoutVisibility());
         } catch (error) {
             console.error('Error submitting order:', error);

@@ -5,6 +5,7 @@ import { GoogleMap, DirectionsRenderer, DirectionsService, useLoadScript } from 
 import { getDatabase, ref, onValue } from "firebase/database";
 import { initializeApp } from "firebase/app";
 import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
+import Link from "next/link";
 
 const mapContainerStyle = {
   width: "100%",
@@ -246,6 +247,33 @@ export default function MyOrder() {
           </div>
         ))
       )}
+
+      
+<div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200">
+        <div className="flex justify-around items-center py-2">
+          <Link href="/">
+            <button className="flex flex-col items-center text-gray-700 hover:text-green-600 transition-colors">
+              <i className="ri-home-line text-3xl"></i>
+              <span className="text-xs">Home</span>
+            </button>
+          </Link>
+
+          <Link href="/Swiggy/Cart">
+            <button className="flex flex-col items-center text-gray-700 hover:text-red-600 transition-colors">
+              <i className="ri-shopping-cart-line text-3xl"></i>
+              <span className="text-xs">Cart</span>
+            </button>
+          </Link>
+
+          <Link href="/Swiggy/MyOrders">
+            <button className="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors">
+            <i className="ri-user-3-fill"></i>
+              <span className="text-xs">Orders</span>
+            </button>
+          </Link>
+        </div>
+      </div>
+
     </div>
   );
 }

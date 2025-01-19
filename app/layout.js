@@ -1,11 +1,12 @@
 "use client";
 import Head from 'next/head';
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Geo } from "next/font/google";
 import "./globals.css";
 import { Provider } from "react-redux";
 import store from '@/utils/store';
 import { Analytics } from '@vercel/analytics/next';
 import NextTopLoader from 'nextjs-toploader';
+import GeoLocation from './GeoLocation';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -38,7 +39,9 @@ export default function RootLayout({ children }) {
          color="black"
          height={7}
         />
+        <GeoLocation/>
         {children}
+
         </Provider>
         <Analytics />
       </body>

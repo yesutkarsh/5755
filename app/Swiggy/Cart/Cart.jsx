@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { removeItem, updateQuantity, clearCart } from '@/utils/slice/foodCartSlice';
 import CheckoutModal from './Component/CheckoutModal';
 import { toggleCheckoutVisibility } from '@/utils/slice/ToggleSlice';
+import Link from 'next/link';
 
 const ShoppingCart = () => {
   // Get cart state from Redux store
@@ -46,6 +47,31 @@ const ShoppingCart = () => {
         <i className="ri-shopping-cart-2-line text-6xl text-gray-400 mb-4"></i>
         <h2 className="text-2xl font-semibold text-gray-600 mb-4">Your cart is empty</h2>
         <p className="text-gray-500">Add some delicious items to your cart!</p>
+      
+        <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200">
+        <div className="flex justify-around items-center py-2">
+          <Link href="/">
+            <button className="flex flex-col items-center text-gray-700 hover:text-green-600 transition-colors">
+              <i className="ri-home-line text-3xl"></i>
+              <span className="text-xs">Home</span>
+            </button>
+          </Link>
+
+          <Link href="/Swiggy/Cart">
+            <button className="flex flex-col items-center text-gray-700 hover:text-red-600 transition-colors">
+              <i className="ri-shopping-cart-line text-3xl"></i>
+              <span className="text-xs">Cart</span>
+            </button>
+          </Link>
+
+          <Link href="/Swiggy/MyOrders">
+            <button className="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors">
+            <i className="ri-user-3-fill"></i>
+              <span className="text-xs">Orders</span>
+            </button>
+          </Link>
+        </div>
+      </div>
       </div>
     );
   }
@@ -131,6 +157,33 @@ const ShoppingCart = () => {
         </div>
       </div>
       {checkout? <CheckoutModal price={totalPrice}/> : null}
+   
+      <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200">
+        <div className="flex justify-around items-center py-2">
+          <Link href="/">
+            <button className="flex flex-col items-center text-gray-700 hover:text-green-600 transition-colors">
+              <i className="ri-home-line text-3xl"></i>
+              <span className="text-xs">Home</span>
+            </button>
+          </Link>
+
+          <Link href="/Swiggy/Cart">
+            <button className="flex flex-col items-center text-gray-700 hover:text-red-600 transition-colors">
+              <i className="ri-shopping-cart-line text-3xl"></i>
+              <span className="text-xs">Cart</span>
+            </button>
+          </Link>
+
+          <Link href="/Swiggy/MyOrders">
+            <button className="flex flex-col items-center text-gray-700 hover:text-blue-600 transition-colors">
+            <i className="ri-user-3-fill"></i>
+              <span className="text-xs">Orders</span>
+            </button>
+          </Link>
+        </div>
+      </div>
+   
+
     </div>
   );
 };

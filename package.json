@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@google-apps/meet": "^0.3.0",
     "@kinde-oss/kinde-auth-nextjs": "^2.4.6",
     "@radix-ui/react-popover": "^1.1.4",
     "@radix-ui/react-progress": "^1.1.1",

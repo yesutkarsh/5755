@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useMemo } from 'react';
+import Link from 'next/link'; // Import Link from Next.js
 
 const SearchModal = ({ isOpen, onClose }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -8,25 +9,24 @@ const SearchModal = ({ isOpen, onClose }) => {
     {
       category: 'Food & Dining',
       items: [
-        { icon: '🍽️', title: 'Restaurants Nearby', keywords: ['food', 'eat', 'dining', 'restaurant'] },
-        { icon: '🛵', title: 'Food Delivery', keywords: ['delivery', 'food', 'order'] },
-        { icon: '☕', title: 'Cafes & Bakeries', keywords: ['coffee', 'cafe', 'bakery', 'bread', 'pastry'] }
+        { icon: '🍽️', title: 'Restaurants Nearby', link: '/Swiggy', keywords: ['food', 'eat', 'dining', 'restaurant'] },
+        { icon: '🛵', title: 'Food Delivery', link: '/Swiggy', keywords: ['delivery', 'food', 'order'] },
+        { icon: '☕', title: 'Cafes & Bakeries', link: '/GetTraffic', keywords: ['coffee', 'cafe', 'bakery', 'bread', 'pastry'] }
       ]
     },
     {
       category: 'Entertainment',
       items: [
-        { icon: '🎬', title: 'Movies & Shows', keywords: ['movie', 'cinema', 'theatre', 'show'] },
-        { icon: '🎮', title: 'Gaming Centers', keywords: ['game', 'gaming', 'play'] },
-        { icon: '🎨', title: 'Art & Culture', keywords: ['art', 'museum', 'culture', 'exhibition'] }
+        { icon: '🎬', title: 'Movies & Shows', link: '/EntHub', keywords: ['movie', 'cinema', 'theatre', 'show'] },
+  
       ]
     },
     {
       category: 'Services',
       items: [
-        { icon: '🏥', title: 'Healthcare', keywords: ['health', 'doctor', 'medical', 'hospital'] },
-        { icon: '🛒', title: 'Shopping', keywords: ['shop', 'mall', 'store', 'retail'] },
-        { icon: '🚗', title: 'Transportation', keywords: ['transport', 'taxi', 'ride', 'travel'] }
+        { icon: '🏥', title: 'Healthcare', link: '/healthcare', keywords: ['health', 'doctor', 'medical', 'hospital'] },
+        { icon: '🛒', title: 'Netflix', link: '/TApps/Netflix', keywords: ['watch', 'movie', 'tv', 'show'] },
+        { icon: '🚗', title: 'Transportation', link: '/TApps/Uber', keywords: ['transport', 'taxi', 'ride', 'travel'] }
       ]
     }
   ];
@@ -84,15 +84,16 @@ const SearchModal = ({ isOpen, onClose }) => {
                 </h3>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {section.items.map((item, itemIndex) => (
-                    <button
-                      key={itemIndex}
-                      className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
-                    >
-                      <span className="text-2xl mr-3">{item.icon}</span>
-                      <span className="text-gray-700 group-hover:text-gray-900">
-                        {item.title}
-                      </span>
-                    </button>
+                    <Link href={item.link} key={itemIndex} passHref>
+                      <button
+                        className="flex items-center p-3 rounded-xl hover:bg-gray-50 transition-colors border border-gray-100 group"
+                      >
+                        <span className="text-2xl mr-3">{item.icon}</span>
+                        <span className="text-gray-700 group-hover:text-gray-900">
+                          {item.title}
+                        </span>
+                      </button>
+                    </Link>
                   ))}
                 </div>
               </div>
