@@ -1,28 +1,14 @@
 "use client"
 import React, { useEffect, useState } from "react";
-import { GoogleMap, TrafficLayer, useLoadScript, Marker } from "@react-google-maps/api";
+import { GoogleMap, TrafficLayer, useLoadScript,  } from "@react-google-maps/api";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from "recharts";
-import { PieChart, Pie, Cell } from "recharts";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar as CalendarIcon, Map, TrendingUp, PieChart as PieChartIcon, Clock, AlertTriangle, 
-         Bell, Share2, Download, Settings, Search, CalendarDays } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { format } from "date-fns";
 
 export default function Page() {
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [notifications, setNotifications] = useState([]);
   const [searchAddress, setSearchAddress] = useState("");
-  const [timeRange, setTimeRange] = useState("24h");
-  const [showNotifications, setShowNotifications] = useState(false);
   const [weeklyData] = useState([
     { day: "Mon", traffic: 75, incidents: 3 },
     { day: "Tue", traffic: 85, incidents: 5 },
