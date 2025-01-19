@@ -41,7 +41,7 @@ const ServiceCards = () => {
   
     {
       icon: Flame,
-      title: "Hot Startups",
+      title: "Hot Songs",
       description: "Discover trending Songs",
       color: "bg-orange-500",
       href: "/TApps/Jiosavan"
