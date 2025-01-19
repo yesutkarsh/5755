@@ -46,6 +46,10 @@ export default async function Hero() {
             <span><i style={{color:"#f0de3f"}} className="ri-taxi-fill"></i> Get Taxi</span>
             <span><i className="ri-timer-2-fill"></i> Watch List</span>
             <span><i className="ri-timer-2-fill"></i> Explore </span>
+            <Link href={"/Account"}>
+            <span><i className="ri-user-3-fill"></i> Account </span>
+            </Link>
+
         </div>
         
         <div className={styles.crasoul}>
@@ -57,6 +61,8 @@ export default async function Hero() {
             <span><i className="ri-restaurant-line"></i> Order Food</span>
             </Link>
             <span><i className="ri-slideshow-3-fill"></i> Meeting </span>
+            <span><i style={{color:"red"}} className="ri-alarm-warning-fill"></i> Accidents Near You </span>
+
 
         </div>
         </div> 

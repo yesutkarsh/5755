@@ -5,6 +5,7 @@ import "./globals.css";
 import { Provider } from "react-redux";
 import store from '@/utils/store';
 import { Analytics } from '@vercel/analytics/next';
+import NextTopLoader from 'nextjs-toploader';
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -33,6 +34,10 @@ export default function RootLayout({ children }) {
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Provider store={store}>
+        <NextTopLoader 
+         color="black"
+         height={7}
+        />
         {children}
         </Provider>
         <Analytics />

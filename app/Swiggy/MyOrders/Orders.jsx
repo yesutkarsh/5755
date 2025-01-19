@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { GoogleMap, DirectionsRenderer, DirectionsService, useLoadScript } from "@react-google-maps/api";
 import { getDatabase, ref, onValue } from "firebase/database";
 import { initializeApp } from "firebase/app";
+import { useKindeBrowserClient } from "@kinde-oss/kinde-auth-nextjs";
 
 const mapContainerStyle = {
   width: "100%",
@@ -18,6 +19,7 @@ export default function MyOrder() {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [directionsResponses, setDirectionsResponses] = useState({});
   const [map, setMap] = useState(null);
+  const { user } = useKindeBrowserClient();
 
   const { isLoaded } = useLoadScript({
     googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY,
@@ -26,6 +28,8 @@ export default function MyOrder() {
 
   // Update current location and watch for changes
   useEffect(() => {
+    if (!user?.email) return; // Only proceed if we have the user's email
+
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         const newLocation = {
@@ -41,23 +45,21 @@ export default function MyOrder() {
       { enableHighAccuracy: true }
     );
 
-    // Fetch orders from Firebase
+    // Fetch orders from Firebase for the current user only
     const app = initializeApp({
       databaseURL: "https://project-8269032991113480607-default-rtdb.firebaseio.com/",
     });
     const db = getDatabase(app);
-    const ordersRef = ref(db, "orders");
+    const userOrdersRef = ref(db, `orders/${user.email.replace(/\./g, ',')}`); // Replace dots with commas in email
 
-    const unsubscribe = onValue(ordersRef, async (snapshot) => {
+    const unsubscribe = onValue(userOrdersRef, async (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const ordersArray = Object.entries(data).flatMap(([emailKey, userOrders]) => 
-          Object.entries(userOrders).map(([orderId, orderData]) => ({
-            id: orderId,
-            ...orderData,
-            emailKey
-          }))
-        );
+        const ordersArray = Object.entries(data).map(([orderId, orderData]) => ({
+          id: orderId,
+          ...orderData,
+          emailKey: user.email
+        }));
 
         const ordersWithCoordinates = await Promise.all(
           ordersArray.map(async (order) => {
@@ -79,6 +81,8 @@ export default function MyOrder() {
         );
 
         setOrders(ordersWithCoordinates);
+      } else {
+        setOrders([]); // Set empty array if no orders found
       }
     });
 
@@ -86,8 +90,9 @@ export default function MyOrder() {
       navigator.geolocation.clearWatch(watchId);
       unsubscribe();
     };
-  }, [map]);
+  }, [map, user?.email]); // Add user.email to dependency array
 
+  // Rest of the code remains the same
   const fetchCoordinates = async (place) => {
     const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
     const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(
@@ -169,70 +174,78 @@ export default function MyOrder() {
     return <div>Loading map...</div>;
   }
 
+  if (!user?.email) {
+    return <div>Please log in to view your orders.</div>;
+  }
+
   return (
     <div className="p-4">
       <h1 className="text-2xl font-bold mb-4">My Orders</h1>
-      {orders.map((order, orderIndex) => (
-        <div key={order.id} className="border rounded-lg p-4 mb-6 shadow-sm">
-          <div className="mb-4">
-            <h2 className="text-xl font-semibold">Order Details</h2>
-            <p>Customer: {order.name}</p>
-            <p>Total Price: ₹{order.totalPrice}</p>
-            <p>Time: {new Date(order.timestamp).toLocaleString()}</p>
-          </div>
+      {orders.length === 0 ? (
+        <p>No orders found.</p>
+      ) : (
+        orders.map((order, orderIndex) => (
+          <div key={order.id} className="border rounded-lg p-4 mb-6 shadow-sm">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold">Order Details</h2>
+              <p>Customer: {order.name}</p>
+              <p>Total Price: ₹{order.totalPrice}</p>
+              <p>Time: {new Date(order.timestamp).toLocaleString()}</p>
+            </div>
 
-          <div className="mb-4">
-            <h3 className="text-lg font-semibold">Items:</h3>
-            {order.items && order.items.map((item, itemIndex) => (
-              <div key={itemIndex} className="ml-4 mb-2">
-                <p>{item.name} - ₹{item.price} x {item.quantity}</p>
-                <p className="text-sm text-gray-600">From: {item.place}</p>
-              </div>
-            ))}
-          </div>
+            <div className="mb-4">
+              <h3 className="text-lg font-semibold">Items:</h3>
+              {order.items && order.items.map((item, itemIndex) => (
+                <div key={itemIndex} className="ml-4 mb-2">
+                  <p>{item.name} - ₹{item.price} x {item.quantity}</p>
+                  <p className="text-sm text-gray-600">From: {item.place}</p>
+                </div>
+              ))}
+            </div>
 
-          <div className="mt-4">
-            <GoogleMap
-              mapContainerStyle={mapContainerStyle}
-              center={currentLocation || defaultCenter}
-              zoom={14}
-              onLoad={onMapLoad}
-            >
-              {currentLocation && map && order.placesWithCoords?.map((placeData, placeIndex) => {
-                if (placeData.coordinates) {
-                  createMarkers(map, currentLocation, placeData.coordinates);
+            <div className="mt-4">
+              <GoogleMap
+                mapContainerStyle={mapContainerStyle}
+                center={currentLocation || defaultCenter}
+                zoom={14}
+                onLoad={onMapLoad}
+              >
+                {currentLocation && map && order.placesWithCoords?.map((placeData, placeIndex) => {
+                  if (placeData.coordinates) {
+                    createMarkers(map, currentLocation, placeData.coordinates);
 
-                  return (
-                    <div key={placeIndex}>
-                      <DirectionsService
-                        options={{
-                          destination: placeData.coordinates,
-                          origin: currentLocation,
-                          travelMode: 'DRIVING'
-                        }}
-                        callback={directionsCallback(orderIndex, placeIndex)}
-                      />
-                      {directionsResponses[`${orderIndex}-${placeIndex}`] && (
-                        <DirectionsRenderer
+                    return (
+                      <div key={placeIndex}>
+                        <DirectionsService
                           options={{
-                            directions: directionsResponses[`${orderIndex}-${placeIndex}`],
-                            suppressMarkers: true,
-                            polylineOptions: {
-                              strokeColor: '#ff0000',
-                              strokeWeight: 4
-                            }
+                            destination: placeData.coordinates,
+                            origin: currentLocation,
+                            travelMode: 'DRIVING'
                           }}
+                          callback={directionsCallback(orderIndex, placeIndex)}
                         />
-                      )}
-                    </div>
-                  );
-                }
-                return null;
-              })}
-            </GoogleMap>
+                        {directionsResponses[`${orderIndex}-${placeIndex}`] && (
+                          <DirectionsRenderer
+                            options={{
+                              directions: directionsResponses[`${orderIndex}-${placeIndex}`],
+                              suppressMarkers: true,
+                              polylineOptions: {
+                                strokeColor: '#ff0000',
+                                strokeWeight: 4
+                              }
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </GoogleMap>
+            </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
     </div>
   );
 }
